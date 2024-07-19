@@ -67,6 +67,7 @@ class Mlp(nn.Module):
         self.fc1 = nn.Linear(in_features, hidden_features, bias=bias[0])
         self.act = act_layer()
         self.drop1 = nn.Dropout(drop_probs[0])
+        # Dropout随机关闭一部分神经元
         self.fc2 = nn.Linear(hidden_features, out_features, bias=bias[1])
         self.drop2 = nn.Dropout(drop_probs[1])
 

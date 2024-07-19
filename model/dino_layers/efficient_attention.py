@@ -55,6 +55,7 @@ class SelfAttention(nn.Module):
         self.attn_drop = nn.Dropout(attn_drop)
         self.proj = nn.Linear(dim, dim, bias=proj_bias)
         self.proj_drop = nn.Dropout(proj_drop)
+        # 旋转位置嵌入（Rotary Positional Embedding
         self.rope = rope 
 
     def forward(self, x: Tensor, xpos=None) -> Tensor:
@@ -76,8 +77,10 @@ class SelfAttention(nn.Module):
         x = self.proj_drop(x)
         return x
 
+# 自注意力机制 继承自SelfAttention类
 class MemEffSelfAttention(SelfAttention):
     def forward(self, x: Tensor, xpos=None, attn_bias=None) -> Tensor:
+        # xFormers是一个针对Transformer模型的优化库，
         if not XFORMERS_AVAILABLE:
             if attn_bias is not None:
                 raise AssertionError("xFormers is required for using nested tensors")

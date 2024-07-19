@@ -21,6 +21,7 @@ sys.path.append(PROJ_ROOT)
 from dataset import misc
 from misc_utils import warmup_lr
 from model.network import model_arch as ModelNet
+# 载入了一个数据集的类
 from dataset.megapose_dataset import MegaPose_Dataset as Dataset
 device = torch.device('cuda:0')
 
@@ -47,8 +48,10 @@ random_view_num = 24    # 8 + 24 = 32
 nnb_Rmat_threshold = 30
 num_train_iters = 100_000
 
+# 数据集的路径
 DATA_DIR = os.path.join(PROJ_ROOT, 'dataspace', 'MegaPose')
 
+# 数据集
 dataset = Dataset(data_dir=DATA_DIR,
                   query_view_num=que_view_num,
                   refer_view_num=refer_view_num,
@@ -58,6 +61,7 @@ dataset = Dataset(data_dir=DATA_DIR,
 
 print('num_objects: ', len(dataset.selected_objIDs))
 
+# 整个网络结构
 model_net = ModelNet().to(device)
 CKPT_ROOT = os.path.join(PROJ_ROOT, 'checkpoints')
 checkpoints = os.path.join(CKPT_ROOT, 'checkpoints')
@@ -70,6 +74,7 @@ if not os.path.exists(tb_dir):
 shutil.move(tb_dir, tb_old)
 tb_writer = SummaryWriter(tb_dir)
 
+# 载入数据集
 data_loader = torch.utils.data.DataLoader(dataset,
                                             shuffle=True,
                                             num_workers=8, 

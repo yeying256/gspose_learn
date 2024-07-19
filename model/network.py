@@ -17,11 +17,12 @@ from .dino_layers import (MemEffSelfAttention,
                                 MemEffEncoderLayer, 
                                 MemEffDecoderLayer)
 
-
+# 整个网络
 class model_arch(nn.Module):
     def __init__(self, cfg=None):
         super(model_arch, self).__init__()
         self.BCE_criterion = nn.BCEWithLogitsLoss()
+        # 获取一些参数
         if cfg is None:
             cfg = dict()
         self.img_size = cfg.get('img_size', 224)   # image size
@@ -39,6 +40,7 @@ class model_arch(nn.Module):
 
         self.backbone_feat_dim = 768
         self.dino_block_indices = [2, 5, 8, 11] # the 3nd, 6th, 9th, 12th blocks
+        # 调用大模型
         self.dino_backbone = torch.hub.load('facebookresearch/dinov2', 'dinov2_vitb14', verbose=False)
         for param in self.dino_backbone.parameters():
             param.requires_grad = False
@@ -58,10 +60,11 @@ class model_arch(nn.Module):
             nn.GroupNorm(1, self.coseg_feat_dim),
             nn.LeakyReLU(inplace=True),
         )
-        
+        # 这是一个标准的positionencoing
         if self.pos_embed == 'cosine':
             self.coseg_position_encoding = PositionEncodingSine2D(d_model=self.coseg_feat_dim)
             self.rope = None # nothing for cosine 
+            # str.startswith() 是一个字符串方法，用于检查字符串是否以特定的前缀开始。如果字符串以指定的前缀开始，那么这个方法会返回 True，否则返回 False。
         elif self.pos_embed.startswith('RoPE'): # eg RoPE100 
             self.coseg_position_encoding = None # nothing to add in the encoder with RoPE
             if RoPE2D is None: raise ImportError("Cannot find cuRoPE2D, please install it")
@@ -71,6 +74,7 @@ class model_arch(nn.Module):
         else:
             raise NotImplementedError('Unknown pos_embed ' + self.pos_embed)
 
+        # 这是一个分割网络
         self.coseg_refer_LayerNorm = nn.LayerNorm(self.coseg_feat_dim)
         self.coseg_query_LayerNorm = nn.LayerNorm(self.coseg_feat_dim)
 
@@ -182,6 +186,7 @@ class model_arch(nn.Module):
         dim_w = dim_W // self.dino_patch_size
 
         xs = list()
+        # 调用大模型
         x = self.dino_backbone.prepare_tokens_with_masks(x) #  Bx3xHxW -> Bx(1+HW)xC
         for blk_idx in range(len(self.dino_backbone.blocks)):
             x = self.dino_backbone.blocks[blk_idx](x) # Bx(1+HW)xC -> Bx(1+L)xC
@@ -407,6 +412,8 @@ class model_arch(nn.Module):
                        x_rand.view(dim_B, -1, 3, dim_S, dim_S), # BxVdx3xSxS
                        x_ref.view(dim_B, -1, 3, dim_S, dim_S),  # BxVrx3xSxS
         ], dim=1).flatten(0, 1) # -> B(Vq+VqVn+Vd+Vr)x3xSxS
+
+        # 输入到dinov2中去
         backbone_feat = self.extract_DINOv2_feature(x) # B(Vq+VqVn+Vd+Vr)x3xSxS -> B(Vq+VqVn+Vd+Vr)xCx32x32
 
         backbone_feat = backbone_feat.view(dim_B, -1, *backbone_feat.shape[1:]) # ==> Bx(Vq+VqVn+Vd+Vr)xCx32x32

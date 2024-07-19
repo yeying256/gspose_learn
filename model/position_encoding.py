@@ -81,6 +81,7 @@ class PositionEncodingSine1D(nn.Module):
     
 
 # Position encoding for query image
+# transformer的Encoding常用技术d_model 的典型值通常是 512 或者 1024。
 class PositionEncodingSine2D(nn.Module):
     """
     This is a sinusoidal position encoding that generalized to 2-dimensional images
@@ -92,17 +93,20 @@ class PositionEncodingSine2D(nn.Module):
             max_shape (tuple): for 1/8 featmap, the max length of 256 corresponds to 2048 pixels
         """
         super().__init__()
-
+        # 转换为一个不可修改内容的元组。这意味着你不能修改新元组的内容。
         max_shape = tuple(max_shape)
 
+        # 这个*就是解包的意思，pe是一个d_model*1280*960的一个张量
         pe = torch.zeros((d_model, *max_shape))
         y_position = torch.ones(max_shape).cumsum(0).float().unsqueeze(0)
         x_position = torch.ones(max_shape).cumsum(1).float().unsqueeze(0)
+        # //是商的整数部分。取商的整生成了一个起始点为0，个数为d_model // 2，步长为2的一个张量
         div_term = torch.exp(
             torch.arange(0, d_model // 2, 2).float()
             * (-math.log(10000.0) / d_model // 2)
         )
         div_term = div_term[:, None, None]  # [C//4, 1, 1]
+        # 从第0维开始，每隔4个元素取一次。如0，4，8这样取值。
         pe[0::4, :, :] = torch.sin(x_position * div_term)
         pe[1::4, :, :] = torch.cos(x_position * div_term)
         pe[2::4, :, :] = torch.sin(y_position * div_term)
